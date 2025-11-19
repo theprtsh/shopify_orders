@@ -41,7 +41,8 @@ const processEmail = (subject, from, body) => {
         order_id: null,
         timestamp: null,
         customer_address: null,
-        customer_email: null
+        customer_email: null,
+	phone_number: null
     };
 
     // Pattern for customer name, order ID, and timestamp
@@ -54,12 +55,42 @@ const processEmail = (subject, from, body) => {
     }
 
     // Pattern for shipping address
-    const addressPattern = /Shipping address\s*\n\s*([\s\S]*?)(?=Customer Email)/i;
-    const addressMatch = body.match(addressPattern);
-    if (addressMatch) {
-        const address = addressMatch[1];
-        orderDetails.customer_address = address.split('\n').map(line => line.trim()).filter(line => line).join('\n');
-    }
+
+    	const addressPattern = /Shipping address\s*\n\s*([\s\S]*?)(?=Customer Email)/i;
+	const addressMatch = body.match(addressPattern);
+	
+	if (addressMatch) {
+	    let addressBlock = addressMatch[1]; // This is the full text block
+	
+	    // A general pattern to find a phone number. It looks for a line that contains
+	    // at least 7 digits and may include a '+', spaces, hyphens, or parentheses.
+	    // The 'm' flag is for multi-line matching.
+	    const phonePattern = /(?:^|\n)\s*(\+?[\d\s\-\(\)]{7,})\s*$/m;
+	    const phoneMatch = addressBlock.match(phonePattern);
+	
+	    if (phoneMatch) {
+	        // Phone number found, extract it and clean it up.
+	        orderDetails.phone_number = phoneMatch[1].trim();
+	
+	        // Remove the matched phone number from the address block to clean it up.
+	        addressBlock = addressBlock.replace(phonePattern, '').trim();
+	    }
+	
+	    // Process the remaining address block (now without the phone number).
+	    // This cleans up extra whitespace and empty lines.
+	    orderDetails.customer_address = addressBlock.split('\n')
+	        .map(line => line.trim())
+	        .filter(line => line) // Removes any empty lines
+	        .join('\n');
+	}
+
+
+
+
+
+
+
+
 
     // Pattern for customer email
     const emailPattern = /Customer Email\s*\n\s*(\S+@\S+\.\S+)/i;
